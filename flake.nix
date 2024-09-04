@@ -13,6 +13,7 @@
         go
         gopls
         gotools
+        delve
       ];
 
       shellHook = ''
