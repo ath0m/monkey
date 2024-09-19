@@ -1,26 +1,38 @@
 {
-  description = "Go development environment";
+  description = "Go development shell";
 
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-
-  outputs = { self, nixpkgs }:
-  let
-    system = "aarch64-linux";
-    pkgs = nixpkgs.legacyPackages.${system};
-  in {
-    devShells.${system}.default = pkgs.mkShell {
-      buildInputs = with pkgs; [
-        go
-        gopls
-        gotools
-        delve
-      ];
-
-      shellHook = ''
-        export GOPATH=$(pwd)/.gopath
-        export PATH=$GOPATH/bin:$PATH
-        echo "Go development environment for aarch64-darwin ready!"
-      '';
-    };
+  inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";  # use the unstable packages for more up-to-date packages
+    flake-utils.url = "github:numtide/flake-utils";
   };
+
+  outputs = { self, nixpkgs, flake-utils }:
+  flake-utils.lib.eachDefaultSystem (system:
+      let pkgs = import nixpkgs { inherit system; };
+    in {
+      devShells.default = pkgs.mkShell {
+        buildInputs = with pkgs; [
+          delve
+          go
+          gopls
+          gofumpt
+          gotools
+          gotests
+        ];
+        shellHook = ''
+          export GOPATH=$(pwd)/.gopath
+          export PATH=$GOPATH/bin:$PATH
+
+          if [ -f go.mod ]; then
+            echo "Found go.mod, running tidy"
+            go mod tidy
+          fi
+
+          echo "Go development shell"
+          echo "$(go version)"
+          echo "GOPATH=$GOPATH"
+        '';
+      };
+    }
+  );
 }
